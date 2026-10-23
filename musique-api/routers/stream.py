@@ -36,7 +36,9 @@ def get_token():
     if creds.expiry is not None:
         _token_cache["expires_at"] = creds.expiry.timestamp()
     else:
-        _token_cache["expires_at"] = None  # Or use a fallback like time.time() + 3600
+        _token_cache["expires_at"] = (
+            creds.expiry.timestamp() if creds.expiry else now + 3600
+        )
     
     return creds.token
 

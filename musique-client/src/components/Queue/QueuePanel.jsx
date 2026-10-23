@@ -8,6 +8,9 @@ export default function QueuePanel() {
 
   const upcoming = queue.slice(currentIndex, currentIndex + 15)
 
+  const volume = useMusicStore((s) => s.volume)
+  const setVolume = useMusicStore((s) => s.setVolume)
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b border-white/10 shrink-0">
@@ -60,9 +63,12 @@ export default function QueuePanel() {
         <div className="flex items-center gap-2">
           <span className="text-gray-600 text-xs">🔈</span>
           <input
-            type="range" min="0" max="1" step="0.01"
-            value={useMusicStore.getState().volume}
-            onChange={(e) => useMusicStore.getState().setVolume(parseFloat(e.target.value))}
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={volume}
+            onChange={(e) => setVolume(parseFloat(e.target.value))}
             className="flex-1 accent-purple-500"
           />
           <span className="text-gray-600 text-xs">🔊</span>

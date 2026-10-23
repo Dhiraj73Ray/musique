@@ -32,7 +32,14 @@ class AudioEngine {
     })
 
     this.audio.addEventListener('ended', () => {
-      g().nextTrack()
+      const { loopMode, nextTrack } = useMusicStore.getState()
+        
+      if (loopMode === 'one') {
+        this.audio.currentTime = 0
+        this.audio.play().catch(console.error)
+      } else {
+        nextTrack()
+      }
     })
 
     this.audio.addEventListener('pause', () => {
@@ -104,15 +111,21 @@ class AudioEngine {
 
   playAtIndex(index) {
     const store = useMusicStore.getState()
-    if (store.currentIndex === index) {
-      // Same song — toggle play/pause
-      if (store.isPlaying) {
-        this.audio.pause()
-      } else {
-        this.audio.play()
-      }
-    } else {
+    const track = store.queue[index]
+    if (!track) return
+  
+    const alreadyLoaded =
+      store.currentIndex === index &&
+      this._currentTrackId === track.id &&
+      this.audio.src
+  
+    if (alreadyLoaded) {
+      if (store.isPlaying) this.audio.pause()
+      else this.audio.play().catch(console.error)
+    } else if (store.currentIndex !== index) {
       store.setCurrentIndex(index)
+    } else {
+      this.loadAndPlay(track)
     }
   }
 }

@@ -27,8 +27,21 @@ export const clearCache = () => {
 }
 
 export const fetchAllTracks = async () => {
-  const res = await fetch('/api/tracks/')
-  const data = await res.json()
-  if (data.status === 'success') return data.tracks
-  throw new Error(data.error || 'Failed to fetch')
+  const limit = 1000
+  let skip = 0
+  let total = Infinity
+  const all = []
+
+  while (all.length < total) {
+    const res = await fetch(`/api/tracks/?skip=${skip}&limit=${limit}`)
+    const data = await res.json()
+    if (data.status !== 'success') throw new Error('Failed to fetch')
+
+    total = data.total
+    all.push(...data.tracks)
+    skip += data.tracks.length
+    if (!data.tracks.length) break
+  }
+
+  return all
 }

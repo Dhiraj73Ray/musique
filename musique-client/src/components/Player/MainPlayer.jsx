@@ -23,7 +23,7 @@ export default function MainPlayer() {
     if (!duration) return
     const rect = seekRef.current.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    audioEngine.seek(ratio * duration)
+    audioEngine.seek(0)
   }
 
   const progress = duration ? (currentTime / duration) * 100 : 0

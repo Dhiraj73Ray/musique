@@ -13,7 +13,8 @@ app.include_router(stream.router)
 # CORS — React frontend ko allow karna
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # baad mein restrict karenge
+    # allow_origins=["*"],  # baad mein restrict karenge
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
