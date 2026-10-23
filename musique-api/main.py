@@ -14,7 +14,7 @@ app.include_router(stream.router)
 app.add_middleware(
     CORSMiddleware,
     # allow_origins=["*"],  # baad mein restrict karenge
-    allow_origins=["http://localhost:5173", "https://*.vercel.app"],
+    allow_origins=["http://localhost:5173", "https://*.vercel.app", "https://musique-hub.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
