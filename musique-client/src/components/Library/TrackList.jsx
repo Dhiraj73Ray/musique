@@ -64,10 +64,10 @@ export default function TrackList() {
     }
   }
 
+   // Left side list ke liye (A-Z)
   const filtered = searchQuery
-  ? originalQueue.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 50)
-  // Search result max 50 dikhao taaki lag na ho
-  : queue
+    ? originalQueue.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 50)
+    : originalQueue.slice(0, displayCount)
 
   const formatName = (name) => name.replace(/\.(mp3|wav|flac|m4a)$/i, '')
 
@@ -104,7 +104,6 @@ export default function TrackList() {
       <div className="overflow-y-auto flex-1">
         {filtered.map((track) => {
           const isActive = queue[currentIndex]?.id === track.id
-          const actualIndex = queue.findIndex(t => t.id === track.id)
 
           return (
             <div

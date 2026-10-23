@@ -6,10 +6,13 @@ export default function QueuePanel() {
 
   const formatName = (name) => name.replace(/\.(mp3|wav|flac|m4a)$/i, '')
 
-  const upcoming = queue.slice(currentIndex, currentIndex + 15)
+    // Agar koi gaana nahi chuna hai (-1), toh shuru se 15 gaane dikhao
+  const startIdx = currentIndex >= 0 ? currentIndex : 0
+  const upcoming = queue.slice(startIdx, startIdx + 15)
 
   const volume = useMusicStore((s) => s.volume)
   const setVolume = useMusicStore((s) => s.setVolume)
+  
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

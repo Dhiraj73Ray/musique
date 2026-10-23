@@ -51,6 +51,7 @@ class AudioEngine {
     })
 
     // Watch currentIndex change
+        // Watch currentIndex change
     let lastIndex = -1
     useMusicStore.subscribe((state) => {
       if (state.currentIndex !== lastIndex) {
@@ -58,12 +59,11 @@ class AudioEngine {
         const track = state.queue[state.currentIndex]
         
         if (track) {
-          // FIRST LOAD LOGIC: Agar pehli baar app khul rahi hai, toh autoplay mat karo
+          // Agar pehli baar load ho raha hai (-1 se change hua hai)
           if (this._currentTrackId === null) {
-            this._currentTrackId = track.id; // Sirf ID save karo
-            // loadAndPlay() call mat karo
+            this._currentTrackId = track.id; // Bas ID set karo, play mat karo
           } else {
-            // Agar user ne next/prev ya koi gaana click kiya hai
+            // Agar user ne manually click kiya
             this.loadAndPlay(track)
           }
         }

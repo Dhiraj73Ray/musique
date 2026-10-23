@@ -17,8 +17,8 @@ _token_cache = {
 def get_token():
     now = time.time()
     
-    # Agar token valid hai (5 min buffer rakho expiry se pehle)
-    if _token_cache["token"] and now < _token_cache["expires_at"] - 300:
+    # Agar token valid hai
+    if _token_cache["token"] and _token_cache["expires_at"] and now < _token_cache["expires_at"] - 300:
         return _token_cache["token"]
     
     # Naya token generate karo
@@ -29,11 +29,10 @@ def get_token():
     auth_req = google.auth.transport.requests.Request()
     creds.refresh(auth_req)
     
-    # Cache mein store karo
     _token_cache["token"] = creds.token
     
-    # YEH PART UPDATE KARO:
-    if creds.expiry is not None:
+    # Expiry handle karo safely
+    if hasattr(creds, 'expiry') and creds.expiry is not None:
         _token_cache["expires_at"] = creds.expiry.timestamp()
     else:
         _token_cache["expires_at"] = now + 3600
