@@ -67,7 +67,7 @@ export default function MainPlayer() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8 bg-gradient-to-b from-purple-900/10 to-transparent">
       <div 
-        className="relative w-52 h-52 rounded-full bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center shadow-2xl shadow-purple-900/60 animate-spin [animation-duration:8s]"
+        className="w-40 h-40 md:w-52 md:h-52 rounded-full bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center shadow-2xl shadow-purple-900/60 animate-spin [animation-duration:8s]"
         style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}
       >
         <div className="w-16 h-16 rounded-full bg-[#12121f] flex items-center justify-center">
@@ -79,7 +79,7 @@ export default function MainPlayer() {
       </div>
 
       <div className="text-center max-w-sm">
-        <h2 className="text-white text-xl font-bold truncate">{trackName}</h2>
+        <h2 className="text-white text-lg md:text-xl font-bold truncate">{trackName}</h2>
         <p className="text-gray-500 text-sm mt-1">
           {networkError ? <span className="text-red-400">{networkError}</span> : 
            isBuffering ? '⏳ Buffering...' : 'Google Drive • Streaming'}
