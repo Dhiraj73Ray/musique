@@ -1,7 +1,7 @@
 import useMusicStore from '../store/musicStore'
 
 const STREAM_BASE = '/api/stream'
-const PRELOAD_AHEAD = 2
+const PRELOAD_AHEAD = 3 // Next 3 gaane preload honge
 
 class AudioEngine {
   constructor() {
@@ -16,8 +16,9 @@ class AudioEngine {
 
     this.audio.addEventListener('timeupdate', () => {
       g().setCurrentTime(this.audio.currentTime)
-      const pct = this.audio.currentTime / this.audio.duration
-      if (pct > 0.7) this._preloadUpcoming()
+      // Agar gaana 60% play ho chuka hai, toh aage ke gaane preload karo
+      const pct = this.audio.currentTime / (this.audio.duration || 1)
+      if (pct > 0.6) this._preloadUpcoming()
     })
 
     this.audio.addEventListener('loadedmetadata', () => {
@@ -32,13 +33,16 @@ class AudioEngine {
     })
 
     this.audio.addEventListener('ended', () => {
-      const { loopMode, nextTrack } = useMusicStore.getState()
-
-      if (loopMode === 'one') {
-        this.audio.currentTime = 0
-        this.audio.play().catch(console.error)
-      } else {
-        nextTrack()
+      const { loopMode, nextTrack } = g()
+      
+      // Check karo ki gaana actually khatam hua hai ya error ki wajah se ruka hai
+      if (this.audio.duration > 0 && this.audio.currentTime >= this.audio.duration - 1) {
+        if (loopMode === 'one') {
+          this.audio.currentTime = 0
+          this.audio.play().catch(console.error)
+        } else {
+          nextTrack()
+        }
       }
     })
 
@@ -52,7 +56,17 @@ class AudioEngine {
       if (state.currentIndex !== lastIndex) {
         lastIndex = state.currentIndex
         const track = state.queue[state.currentIndex]
-        if (track) this.loadAndPlay(track)
+        
+        if (track) {
+          // FIRST LOAD LOGIC: Agar pehli baar app khul rahi hai, toh autoplay mat karo
+          if (this._currentTrackId === null) {
+            this._currentTrackId = track.id; // Sirf ID save karo
+            // loadAndPlay() call mat karo
+          } else {
+            // Agar user ne next/prev ya koi gaana click kiya hai
+            this.loadAndPlay(track)
+          }
+        }
       }
     })
 
@@ -63,7 +77,8 @@ class AudioEngine {
   }
 
     loadAndPlay(track) {
-    if (this._currentTrackId === track.id) {
+    // YEH CHECK UPDATE KARO: src empty na ho tabhi skip karo
+    if (this._currentTrackId === track.id && this.audio.src) {
       this.audio.play().catch(e => {
         useMusicStore.getState().setIsPlaying(false)
         console.warn("Autoplay blocked:", e)
@@ -77,8 +92,7 @@ class AudioEngine {
     useMusicStore.getState().setIsBuffering(true)
 
     if (preloaded && preloaded.readyState >= 3) {
-      console.log(`⚡ Instant Play: ${track.name}`)
-      // Agar preload ready hai, toh direct src set karo
+      console.log(`⚡ Instant Play (Cache): ${track.name}`)
       this.audio.src = preloaded.src
     } else {
       console.log(`🔄 Streaming: ${track.name}`)
@@ -88,32 +102,37 @@ class AudioEngine {
     this.audio.currentTime = 0
     this.audio.volume = useMusicStore.getState().volume
 
-    this.audio.play()
-      .then(() => {
-        useMusicStore.getState().setIsPlaying(true)
-        useMusicStore.getState().setIsBuffering(false)
-        setTimeout(() => this._preloadUpcoming(), 2000)
-      })
-      .catch(err => {
-        // YEH AUTOPLAY ERROR HANDLE KAREGA
-        useMusicStore.getState().setIsPlaying(false)
-        useMusicStore.getState().setIsBuffering(false)
-        console.warn("Play failed (Autoplay policy):", err)
-      })
+    const playPromise = this.audio.play()
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          useMusicStore.getState().setIsPlaying(true)
+          useMusicStore.getState().setIsBuffering(false)
+          setTimeout(() => this._preloadUpcoming(), 1000)
+        })
+        .catch(err => {
+          if (err.name === 'AbortError') return;
+          useMusicStore.getState().setIsPlaying(false)
+          useMusicStore.getState().setIsBuffering(false)
+          console.warn("Play failed:", err.message)
+        })
+    }
   }
 
   _preloadUpcoming() {
     const { queue, currentIndex, preloadedAudios } = useMusicStore.getState()
     
-    // Memory leak fix: Purane preloads delete karo jo ab kaam ke nahi
+    // Memory Leak Fix: Jo gaane ab preload nahi chahiye, unhe memory se hatao
     Object.keys(preloadedAudios).forEach(id => {
-      const isUpcoming = queue.slice(currentIndex + 1, currentIndex + 4).some(t => t.id === id)
+      const isUpcoming = queue.slice(currentIndex + 1, currentIndex + PRELOAD_AHEAD + 1).some(t => t.id === id)
       if (!isUpcoming) {
-        preloadedAudios[id].src = ''
+        preloadedAudios[id].src = '' // Browser memory free karo
         useMusicStore.getState().removePreloaded(id)
       }
     })
 
+    // Next 3 gaane background mein download karo
     for (let i = 1; i <= PRELOAD_AHEAD; i++) {
       const next = queue[currentIndex + i]
       if (!next || preloadedAudios[next.id]) continue
@@ -121,36 +140,38 @@ class AudioEngine {
       const a = new Audio()
       a.preload = 'auto'
       a.src = `${STREAM_BASE}/${next.id}`
-      a.load() // <--- YEH LINE SABSE ZAROORI HAI (Force download start karega)
+      a.load() // YEH LINE ACTUAL DOWNLOAD TRIGGER KARTI HAI
       
       useMusicStore.getState().addPreloaded(next.id, a)
       console.log(`📦 Preloading in background: ${next.name}`)
     }
   }
 
-
   seek(time) {
     this.audio.currentTime = time
     useMusicStore.getState().setCurrentTime(time)
   }
 
-  playAtIndex(index) {
+    playAtIndex(index) {
     const store = useMusicStore.getState()
     const track = store.queue[index]
+    
     if (!track) return
-  
-    const alreadyLoaded =
-      store.currentIndex === index &&
-      this._currentTrackId === track.id &&
-      this.audio.src
-  
-    if (alreadyLoaded) {
-      if (store.isPlaying) this.audio.pause()
-      else this.audio.play().catch(console.error)
-    } else if (store.currentIndex !== index) {
-      store.setCurrentIndex(index)
+
+    if (store.currentIndex === index) {
+      // AGAR SRC EMPTY HAI (First Load), TOH LOAD KARO
+      if (!this.audio.src) {
+        this.loadAndPlay(track)
+      } 
+      // Agar src hai, toh normal toggle karo
+      else if (store.isPlaying) {
+        this.audio.pause()
+      } else {
+        this.audio.play().catch(console.error)
+      }
     } else {
-      this.loadAndPlay(track)
+      // Alag gaana select kiya gaya hai
+      store.setCurrentIndex(index)
     }
   }
 }

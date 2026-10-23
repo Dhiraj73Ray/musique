@@ -57,13 +57,14 @@ const useMusicStore = create((set, get) => ({
     return queue[currentIndex] || null
   },
 
-  nextTrack: () => {
-    const { queue, currentIndex, loopMode, isShuffled } = get()
-    if (loopMode === 'one') { set({ currentTime: 0 }); return }
-    if (isShuffled) {
-      set({ currentIndex: Math.floor(Math.random() * queue.length), currentTime: 0 })
-      return
-    }
+    nextTrack: () => {
+    const { queue, currentIndex, loopMode } = get()
+    
+    // Loop 'one' AudioEngine khud handle karta hai
+    if (loopMode === 'one') return 
+
+    // Kyunki humne toggleShuffle mein queue ko already shuffle kar diya hai,
+    // ab bas next index pe jana hai.
     if (currentIndex < queue.length - 1) {
       set({ currentIndex: currentIndex + 1, currentTime: 0 })
     } else if (loopMode === 'all') {
@@ -72,9 +73,11 @@ const useMusicStore = create((set, get) => ({
   },
 
   prevTrack: () => {
-    const { currentIndex, currentTime } = get()
-    if (currentTime > 3) { set({ currentTime: 0 }); return }
-    if (currentIndex > 0) set({ currentIndex: currentIndex - 1, currentTime: 0 })
+    const { currentIndex } = get()
+    // Agar pehle gaane pe hain, toh index 0 hi rahega
+    if (currentIndex > 0) {
+      set({ currentIndex: currentIndex - 1, currentTime: 0 })
+    }
   },
 
   toggleShuffle: () => {

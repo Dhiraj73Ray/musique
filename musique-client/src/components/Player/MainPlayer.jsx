@@ -98,14 +98,21 @@ export default function MainPlayer() {
         >⇄</button>
 
         <button
-          onClick={prevTrack}
+          onClick={() => {
+            // Agar 3 sec se zyada baj gaya hai, toh current song restart karo
+            if (currentTime > 3) {
+              audioEngine.seek(0)
+            } else {
+              prevTrack()
+            }
+          }}
           className="text-gray-300 hover:text-white text-2xl transition-colors"
         >⏮</button>
 
-        <button
+                <button
           onClick={() => {
-            if (isPlaying) audioEngine.audio.pause()
-            else audioEngine.audio.play()
+            // playAtIndex use karo taaki engine khud handle kare load ya play
+            audioEngine.playAtIndex(useMusicStore.getState().currentIndex)
           }}
           className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 active:scale-95 transition-transform"
         >
