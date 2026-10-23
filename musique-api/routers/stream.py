@@ -60,6 +60,7 @@ async def stream_track(file_id: str, request: Request):
         response_headers = {
             "Accept-Ranges": "bytes",
             "Content-Type": response.headers.get("Content-Type", "audio/mpeg"),
+            "Cache-Control": "public, max-age=86400",
         }
         if "Content-Length" in response.headers:
             response_headers["Content-Length"] = response.headers["Content-Length"]

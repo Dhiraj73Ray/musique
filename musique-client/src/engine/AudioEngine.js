@@ -33,7 +33,7 @@ class AudioEngine {
 
     this.audio.addEventListener('ended', () => {
       const { loopMode, nextTrack } = useMusicStore.getState()
-        
+
       if (loopMode === 'one') {
         this.audio.currentTime = 0
         this.audio.play().catch(console.error)
@@ -62,9 +62,12 @@ class AudioEngine {
     })
   }
 
-  loadAndPlay(track) {
+    loadAndPlay(track) {
     if (this._currentTrackId === track.id) {
-      this.audio.play().catch(console.error)
+      this.audio.play().catch(e => {
+        useMusicStore.getState().setIsPlaying(false)
+        console.warn("Autoplay blocked:", e)
+      })
       return
     }
 
@@ -74,7 +77,8 @@ class AudioEngine {
     useMusicStore.getState().setIsBuffering(true)
 
     if (preloaded && preloaded.readyState >= 3) {
-      console.log(`⚡ Instant: ${track.name}`)
+      console.log(`⚡ Instant Play: ${track.name}`)
+      // Agar preload ready hai, toh direct src set karo
       this.audio.src = preloaded.src
     } else {
       console.log(`🔄 Streaming: ${track.name}`)
@@ -83,26 +87,47 @@ class AudioEngine {
 
     this.audio.currentTime = 0
     this.audio.volume = useMusicStore.getState().volume
+
     this.audio.play()
       .then(() => {
         useMusicStore.getState().setIsPlaying(true)
+        useMusicStore.getState().setIsBuffering(false)
         setTimeout(() => this._preloadUpcoming(), 2000)
       })
-      .catch(console.error)
+      .catch(err => {
+        // YEH AUTOPLAY ERROR HANDLE KAREGA
+        useMusicStore.getState().setIsPlaying(false)
+        useMusicStore.getState().setIsBuffering(false)
+        console.warn("Play failed (Autoplay policy):", err)
+      })
   }
 
   _preloadUpcoming() {
     const { queue, currentIndex, preloadedAudios } = useMusicStore.getState()
+    
+    // Memory leak fix: Purane preloads delete karo jo ab kaam ke nahi
+    Object.keys(preloadedAudios).forEach(id => {
+      const isUpcoming = queue.slice(currentIndex + 1, currentIndex + 4).some(t => t.id === id)
+      if (!isUpcoming) {
+        preloadedAudios[id].src = ''
+        useMusicStore.getState().removePreloaded(id)
+      }
+    })
+
     for (let i = 1; i <= PRELOAD_AHEAD; i++) {
       const next = queue[currentIndex + i]
       if (!next || preloadedAudios[next.id]) continue
+      
       const a = new Audio()
       a.preload = 'auto'
       a.src = `${STREAM_BASE}/${next.id}`
+      a.load() // <--- YEH LINE SABSE ZAROORI HAI (Force download start karega)
+      
       useMusicStore.getState().addPreloaded(next.id, a)
-      console.log(`📦 Preloading: ${next.name}`)
+      console.log(`📦 Preloading in background: ${next.name}`)
     }
   }
+
 
   seek(time) {
     this.audio.currentTime = time

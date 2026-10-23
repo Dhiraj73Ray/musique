@@ -3,6 +3,7 @@ import { create } from 'zustand'
 const useMusicStore = create((set, get) => ({
   // Tracks
   tracks: [],
+  originalQueue: [],
   queue: [],
   totalTracks: 0,
   displayCount: 50,
@@ -29,6 +30,7 @@ const useMusicStore = create((set, get) => ({
   // Track actions
   setTracks: (tracks) => set({
     tracks,
+    originalQueue: tracks,
     queue: tracks,
     totalTracks: tracks.length,
     displayCount: 50
@@ -76,15 +78,22 @@ const useMusicStore = create((set, get) => ({
   },
 
   toggleShuffle: () => {
-    const { isShuffled, tracks, currentIndex, queue } = get()
+    const { isShuffled, originalQueue, currentIndex, queue } = get()
     const currentTrack = queue[currentIndex]
+
     if (!isShuffled) {
-      const shuffled = [...tracks].sort(() => Math.random() - 0.5)
+      // Shuffle ON: Naya random queue banao originalQueue se
+      const shuffled = [...originalQueue]
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
       const newIndex = shuffled.findIndex(t => t.id === currentTrack?.id)
       set({ isShuffled: true, queue: shuffled, currentIndex: Math.max(0, newIndex) })
     } else {
-      const newIndex = tracks.findIndex(t => t.id === currentTrack?.id)
-      set({ isShuffled: false, queue: tracks, currentIndex: Math.max(0, newIndex) })
+      // Shuffle OFF: Wapas normal queue pe jao
+      const newIndex = originalQueue.findIndex(t => t.id === currentTrack?.id)
+      set({ isShuffled: false, queue: originalQueue, currentIndex: Math.max(0, newIndex) })
     }
   },
 
@@ -100,6 +109,12 @@ const useMusicStore = create((set, get) => ({
   })),
 
   getPreloaded: (fileId) => get().preloadedAudios[fileId] || null,
+
+  removePreloaded: (fileId) => set((s) => {
+    const newPreloaded = { ...s.preloadedAudios }
+    delete newPreloaded[fileId]
+    return { preloadedAudios: newPreloaded }
+  }),
 }))
 
 export default useMusicStore
