@@ -101,7 +101,24 @@ class AudioEngine {
 
     this.audio.currentTime = 0
     this.audio.volume = useMusicStore.getState().volume
+    
+        // OS Media Controls Setup
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.name.replace(/\.(mp3|wav|flac|m4a)$/i, ''),
+        artist: 'Musique Library',
+        album: 'Google Drive',
+        artwork: [
+          { src: 'https://cdn-icons-png.flaticon.com/512/3844/3844724.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
 
+      navigator.mediaSession.setActionHandler('play', () => this.audio.play());
+      navigator.mediaSession.setActionHandler('pause', () => this.audio.pause());
+      navigator.mediaSession.setActionHandler('previoustrack', () => useMusicStore.getState().prevTrack());
+      navigator.mediaSession.setActionHandler('nexttrack', () => useMusicStore.getState().nextTrack());
+    }
+    
     const playPromise = this.audio.play()
     
     if (playPromise !== undefined) {

@@ -2,8 +2,31 @@ import Navbar from './components/Layout/Navbar'
 import TrackList from './components/Library/TrackList'
 import MainPlayer from './components/Player/MainPlayer'
 import QueuePanel from './components/Queue/QueuePanel'
+import { useEffect } from 'react'
 
 function App() {
+  const { nextTrack, prevTrack, isPlaying } = useMusicStore()
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Agar search box mein type kar raha hai, toh shortcut ignore karo
+      if (e.target.tagName === 'INPUT') return
+
+      if (e.code === 'Space') {
+        e.preventDefault() // Page scroll hone se roko
+        if (isPlaying) audioEngine.audio.pause()
+        else audioEngine.audio.play().catch(console.error)
+      } else if (e.code === 'ArrowRight') {
+        nextTrack()
+      } else if (e.code === 'ArrowLeft') {
+        prevTrack()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [nextTrack, prevTrack, isPlaying])
+  
   return (
     <div className="h-screen bg-[#12121f] flex flex-col overflow-hidden text-white">
       <Navbar />

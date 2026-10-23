@@ -148,12 +148,21 @@ const useMusicStore = create((set, get) => ({
 }))
 
 // --- MAGIC: Har state change pe localStorage mein save karo ---
+let lastSavedIndex = -1
+let lastSavedShuffle = false
+
 useMusicStore.subscribe((state) => {
-  localStorage.setItem('musique_state', JSON.stringify({
-    queue: state.queue,
-    currentIndex: state.currentIndex,
-    isShuffled: state.isShuffled
-  }))
+  // Agar index ya shuffle change hua hai tabhi save karo (Har second save mat karo)
+  if (state.currentIndex !== lastSavedIndex || state.isShuffled !== lastSavedShuffle) {
+    lastSavedIndex = state.currentIndex
+    lastSavedShuffle = state.isShuffled
+    
+    localStorage.setItem('musique_state', JSON.stringify({
+      queue: state.queue,
+      currentIndex: state.currentIndex,
+      isShuffled: state.isShuffled
+    }))
+  }
 })
 
 export default useMusicStore
