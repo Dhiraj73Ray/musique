@@ -5,7 +5,7 @@ const CACHE_TIME_KEY = 'musique_tracks_time'
 const CACHE_EXPIRY = 1000 * 60 * 60 * 24 // 24 hours
 
 // Yahan Render ka URL aayega (Vercel ki env se)
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+const API_BASE = 'https://musique-77n9.onrender.com'
 
 let activeFetchPromise = null;
 

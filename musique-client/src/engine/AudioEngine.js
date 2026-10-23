@@ -2,7 +2,7 @@ import useMusicStore from '../store/musicStore'
 
 const STREAM_BASE = `${API_BASE}/stream`
 const PRELOAD_AHEAD = 3
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+const API_BASE = 'https://musique-77n9.onrender.com'
 
 class AudioEngine {
   constructor() {
