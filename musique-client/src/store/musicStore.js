@@ -92,16 +92,50 @@ const useMusicStore = create((set, get) => ({
   },
 
     nextTrack: () => {
-    const { queue, currentIndex, loopMode } = get()
+    const { queue, currentIndex, loopMode, displayCount, totalTracks, originalQueue, isShuffled } = get()
     
     // Loop 'one' AudioEngine khud handle karta hai
     if (loopMode === 'one') return 
 
-    // Kyunki humne toggleShuffle mein queue ko already shuffle kar diya hai,
-    // ab bas next index pe jana hai.
+    // 1. Agar queue mein agla gaana already maujood hai
     if (currentIndex < queue.length - 1) {
       set({ currentIndex: currentIndex + 1, currentTime: 0 })
-    } else if (loopMode === 'all') {
+      return
+    }
+
+    // 2. Agar queue khatam ho gayi hai, par Drive pe aur gaane bache hain
+    if (displayCount < totalTracks) {
+      const newDisplayCount = Math.min(displayCount + 50, totalTracks)
+      
+      // Naye 50 gaane nikalo
+      const newSongs = originalQueue.slice(displayCount, newDisplayCount)
+      let newQueue = [...queue]
+
+      // Agar shuffle ON hai, toh in naye 50 gaano ko shuffle karke queue mein jodo
+      if (isShuffled) {
+        const shuffledNewSongs = [...newSongs]
+        for (let i = shuffledNewSongs.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledNewSongs[i], shuffledNewSongs[j]] = [shuffledNewSongs[j], shuffledNewSongs[i]];
+        }
+        newQueue = [...newQueue, ...shuffledNewSongs]
+      } else {
+        // Normal mode mein seedha jodo
+        newQueue = [...newQueue, ...newSongs]
+      }
+
+      // State update karo aur index ko next gaane pe le jao
+      set({
+        displayCount: newDisplayCount,
+        queue: newQueue,
+        currentIndex: currentIndex + 1,
+        currentTime: 0
+      })
+      return
+    }
+
+    // 3. Agar saare 2994 gaane khatam ho gaye hain (End of Library)
+    if (loopMode === 'all' && queue.length > 0) {
       set({ currentIndex: 0, currentTime: 0 })
     }
   },
