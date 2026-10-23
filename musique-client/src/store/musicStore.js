@@ -28,20 +28,54 @@ const useMusicStore = create((set, get) => ({
   searchQuery: '',
 
   // Track actions
-  setTracks: (tracks) => set({
-    tracks,
-    originalQueue: tracks,
-    queue: tracks,
-    totalTracks: tracks.length,
-    displayCount: 50
+  setTracks: (tracks) => set((state) => {
+    // Agar shuffle ON hai, toh background sync pe queue ko touch mat karo
+    if (state.isShuffled) {
+      return {
+        tracks,
+        originalQueue: tracks, 
+        totalTracks: tracks.length,
+      }
+    }
+    return {
+      tracks,
+      originalQueue: tracks,
+      queue: tracks.slice(0, state.displayCount), // Sirf loaded tracks queue mein daalo
+      totalTracks: tracks.length,
+    }
   }),
 
   setIsLoadingTracks: (val) => set({ isLoadingTracks: val }),
   setIsSyncing: (val) => set({ isSyncing: val }),
   setLastSynced: (val) => set({ lastSynced: val }),
-  loadMore: () => set((s) => ({
-    displayCount: Math.min(s.displayCount + 50, s.totalTracks)
-  })),
+  loadMore: () => set((state) => {
+    const newDisplayCount = Math.min(state.displayCount + 50, state.totalTracks)
+    
+    // Agar shuffle ON hai
+    if (state.isShuffled) {
+      // Next 50 naye gaane nikalo
+      const newSongs = state.originalQueue.slice(state.displayCount, newDisplayCount)
+      const shuffledNewSongs = [...newSongs]
+      
+      // Sirf in naye 50 gaano ko shuffle karo
+      for (let i = shuffledNewSongs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledNewSongs[i], shuffledNewSongs[j]] = [shuffledNewSongs[j], shuffledNewSongs[i]];
+      }
+      
+      // Existing shuffled queue ke niche naye shuffled gaane append karo
+      return {
+        displayCount: newDisplayCount,
+        queue: [...state.queue, ...shuffledNewSongs]
+      }
+    }
+
+    // Agar shuffle OFF hai (Normal mode)
+    return {
+      displayCount: newDisplayCount,
+      queue: state.originalQueue.slice(0, newDisplayCount)
+    }
+  }),
 
   // Player actions
   setCurrentIndex: (i) => set({ currentIndex: i, currentTime: 0 }),
@@ -81,22 +115,26 @@ const useMusicStore = create((set, get) => ({
   },
 
   toggleShuffle: () => {
-    const { isShuffled, originalQueue, currentIndex, queue } = get()
+    const { isShuffled, originalQueue, currentIndex, queue, displayCount } = get()
     const currentTrack = queue[currentIndex]
 
     if (!isShuffled) {
-      // Shuffle ON: Naya random queue banao originalQueue se
-      const shuffled = [...originalQueue]
+      // Shuffle ON: Sirf utne hi gaane uthao jitne screen pe load hain
+      const loadedSongs = originalQueue.slice(0, displayCount)
+      const shuffled = [...loadedSongs]
+      
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
-      const newIndex = shuffled.findIndex(t => t.id === currentTrack?.id)
+      
+      const newIndex = currentTrack ? shuffled.findIndex(t => t.id === currentTrack.id) : 0
       set({ isShuffled: true, queue: shuffled, currentIndex: Math.max(0, newIndex) })
     } else {
-      // Shuffle OFF: Wapas normal queue pe jao
-      const newIndex = originalQueue.findIndex(t => t.id === currentTrack?.id)
-      set({ isShuffled: false, queue: originalQueue, currentIndex: Math.max(0, newIndex) })
+      // Shuffle OFF: Wapas normal order mein (sirf loaded tracks ke liye)
+      const normalQueue = originalQueue.slice(0, displayCount)
+      const newIndex = currentTrack ? normalQueue.findIndex(t => t.id === currentTrack.id) : 0
+      set({ isShuffled: false, queue: normalQueue, currentIndex: Math.max(0, newIndex) })
     }
   },
 

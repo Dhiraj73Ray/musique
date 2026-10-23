@@ -66,7 +66,7 @@ export default function TrackList() {
 
   const filtered = searchQuery
     ? queue.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : queue.slice(0, displayCount)
+    : queue
 
   const formatName = (name) => name.replace(/\.(mp3|wav|flac|m4a)$/i, '')
 
