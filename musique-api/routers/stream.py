@@ -32,13 +32,11 @@ def get_token():
     # Cache mein store karo
     _token_cache["token"] = creds.token
     
-    # Safely handle cases where creds.expiry is None
+    # YEH PART UPDATE KARO:
     if creds.expiry is not None:
         _token_cache["expires_at"] = creds.expiry.timestamp()
     else:
-        _token_cache["expires_at"] = (
-            creds.expiry.timestamp() if creds.expiry else now + 3600
-        )
+        _token_cache["expires_at"] = now + 3600
     
     return creds.token
 

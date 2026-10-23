@@ -5,7 +5,7 @@ import { getCachedTracks, cacheTracks, fetchAllTracks, clearCache } from '../../
 
 export default function TrackList() {
   const {
-    queue, currentIndex, isPlaying,
+    queue, originalQueue, currentIndex, isPlaying,
     searchQuery, displayCount, loadMore,
     totalTracks, isLoadingTracks, isSyncing,
     setTracks, setIsLoadingTracks, setIsSyncing, setLastSynced
@@ -65,8 +65,9 @@ export default function TrackList() {
   }
 
   const filtered = searchQuery
-    ? queue.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : queue
+  ? originalQueue.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 50)
+  // Search result max 50 dikhao taaki lag na ho
+  : queue
 
   const formatName = (name) => name.replace(/\.(mp3|wav|flac|m4a)$/i, '')
 
@@ -108,7 +109,7 @@ export default function TrackList() {
           return (
             <div
               key={track.id}
-              onClick={() => audioEngine.playAtIndex(actualIndex)}
+              onClick={() => audioEngine.playTrackById(track.id)}
               className={`
                 flex items-center gap-3 px-4 py-2.5 cursor-pointer
                 border-b border-white/5 transition-colors

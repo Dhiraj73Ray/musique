@@ -152,6 +152,8 @@ class AudioEngine {
     useMusicStore.getState().setCurrentTime(time)
   }
 
+  
+
     playAtIndex(index) {
     const store = useMusicStore.getState()
     const track = store.queue[index]
@@ -174,6 +176,30 @@ class AudioEngine {
       store.setCurrentIndex(index)
     }
   }
+
+    playTrackById(trackId) {
+    const store = useMusicStore.getState()
+    
+    // 1. Check karo ki gaana already current queue mein hai ya nahi
+    let index = store.queue.findIndex(t => t.id === trackId)
+    
+    if (index !== -1) {
+      // Agar queue mein hai, toh seedha play karo
+      this.playAtIndex(index)
+    } else {
+      // 2. Agar queue mein nahi hai (matlab search se kisi naye gaane pe click kiya)
+      const track = store.originalQueue.find(t => t.id === trackId)
+      if (track) {
+        // Us gaane ko current queue ke end mein add karo aur play karo
+        useMusicStore.setState(state => ({
+          queue: [...state.queue, track],
+          currentIndex: state.queue.length, // Naya index end mein
+          currentTime: 0
+        }))
+      }
+    }
+  }
+  
 }
 
 const audioEngine = new AudioEngine()
