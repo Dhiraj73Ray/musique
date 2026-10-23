@@ -3,8 +3,11 @@ import useMusicStore from '../store/musicStore'
 const CACHE_KEY = 'musique_tracks'
 const CACHE_TIME_KEY = 'musique_tracks_time'
 const CACHE_EXPIRY = 1000 * 60 * 60 * 24 // 24 hours
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 let activeFetchPromise = null;
+
+const res = await fetch(`${API_BASE}/tracks/?skip=${skip}&limit=${limit}`)
 
 export const getCachedTracks = () => {
   try {
