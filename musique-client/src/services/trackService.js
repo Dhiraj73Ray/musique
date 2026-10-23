@@ -1,8 +1,9 @@
+import useMusicStore from '../store/musicStore'
+
 const CACHE_KEY = 'musique_tracks'
 const CACHE_TIME_KEY = 'musique_tracks_time'
 const CACHE_EXPIRY = 1000 * 60 * 60 * 24 // 24 hours
 
-// Global lock taaki ek sath 2 fetch na ho
 let activeFetchPromise = null;
 
 export const getCachedTracks = () => {
@@ -30,7 +31,6 @@ export const clearCache = () => {
 }
 
 export const fetchAllTracks = async () => {
-  // Agar pehle se fetch ho raha hai, toh wahi promise return karo
   if (activeFetchPromise) return activeFetchPromise;
 
   activeFetchPromise = (async () => {
@@ -40,22 +40,34 @@ export const fetchAllTracks = async () => {
     const all = []
 
     while (all.length < total) {
-      const res = await fetch(`/api/tracks/?skip=${skip}&limit=${limit}`)
-      const data = await res.json()
-      if (data.status !== 'success') throw new Error('Failed to fetch')
+      try {
+        const res = await fetch(`/api/tracks/?skip=${skip}&limit=${limit}`)
+        
+        if (!res.ok) {
+          throw new Error(`Server error: ${res.status}`)
+        }
 
-      total = data.total
-      all.push(...data.tracks)
-      skip += data.tracks.length
-      if (!data.tracks.length) break
+        const data = await res.json()
+        if (data.status !== 'success') throw new Error('Failed to fetch')
+
+        total = data.total
+        all.push(...data.tracks)
+        skip += data.tracks.length
+        if (!data.tracks.length) break
+        
+        useMusicStore.getState().setBackendDown(false) // Success
+        
+      } catch (err) {
+        useMusicStore.getState().setBackendDown(true) // Fail
+        throw err
+      }
     }
-
     return all
   })()
 
   try {
     const result = await activeFetchPromise
-    activeFetchPromise = null // Kaam hone ke baad lock hatao
+    activeFetchPromise = null
     return result
   } catch (e) {
     activeFetchPromise = null

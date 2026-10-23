@@ -5,11 +5,10 @@ import audioEngine from '../../engine/AudioEngine'
 export default function MainPlayer() {
   const {
     queue, currentIndex, isPlaying, isBuffering,
-    currentTime, duration, loopMode, isShuffled,
+    currentTime, duration, loopMode, isShuffled, networkError,
     toggleShuffle, toggleLoop, nextTrack, prevTrack
   } = useMusicStore()
 
-  // Dragging ke liye local state
   const [isDragging, setIsDragging] = useState(false)
   const [previewTime, setPreviewTime] = useState(0)
 
@@ -23,29 +22,24 @@ export default function MainPlayer() {
     return `${m}:${s}`
   }
 
-  // Drag start (Mouse click ya Touch start)
   const handlePointerDown = (e) => {
     setIsDragging(true)
     updatePreviewTime(e)
-    e.currentTarget.setPointerCapture(e.pointerId) // Pointer ko lock karo
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
 
-  // Drag move (Jab tak mouse ya ungli dabbi hui hai)
   const handlePointerMove = (e) => {
     if (isDragging) updatePreviewTime(e)
   }
 
-  // Drag end (Jab mouse ya ungli uth jaye)
   const handlePointerUp = (e) => {
     if (isDragging) {
       setIsDragging(false)
       e.currentTarget.releasePointerCapture(e.pointerId)
-      // SIRF AB ACTUAL AUDIO SEEK KARO
       audioEngine.seek(previewTime) 
     }
   }
 
-  // Time calculate karo mouse/touch ki position se
   const updatePreviewTime = (e) => {
     if (!seekRef.current || !duration) return
     const rect = seekRef.current.getBoundingClientRect()
@@ -53,11 +47,11 @@ export default function MainPlayer() {
     setPreviewTime(ratio * duration)
   }
 
-  // Agar drag ho raha hai toh preview time dikhao, warna actual time
   const displayTime = isDragging ? previewTime : currentTime
   const progress = duration ? (displayTime / duration) * 100 : 0
 
-  if (!track) {
+  // No song selected state (Fresh load)
+  if (!track || currentIndex === -1) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 text-gray-600">
         <div className="w-52 h-52 rounded-full bg-white/5 flex items-center justify-center">
@@ -72,36 +66,26 @@ export default function MainPlayer() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8 bg-gradient-to-b from-purple-900/10 to-transparent">
-
-      {/* Vinyl */}
       <div 
-        className="
-          relative w-52 h-52 rounded-full
-          bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400
-          flex items-center justify-center
-          shadow-2xl shadow-purple-900/60
-          animate-spin [animation-duration:8s]
-        "
+        className="relative w-52 h-52 rounded-full bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center shadow-2xl shadow-purple-900/60 animate-spin [animation-duration:8s]"
         style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}
       >
         <div className="w-16 h-16 rounded-full bg-[#12121f] flex items-center justify-center">
           <div className="w-3 h-3 rounded-full bg-purple-400/60" />
         </div>
-        {/* Buffering ring */}
         {isBuffering && (
           <div className="absolute inset-0 rounded-full border-4 border-white/20 border-t-white animate-spin" />
         )}
       </div>
 
-      {/* Song Info */}
       <div className="text-center max-w-sm">
         <h2 className="text-white text-xl font-bold truncate">{trackName}</h2>
         <p className="text-gray-500 text-sm mt-1">
-          {isBuffering ? '⏳ Buffering...' : 'Google Drive • Streaming'}
+          {networkError ? <span className="text-red-400">{networkError}</span> : 
+           isBuffering ? '⏳ Buffering...' : 'Google Drive • Streaming'}
         </p>
       </div>
 
-      {/* Seek Bar */}
       <div className="w-full max-w-md">
         <div
           ref={seekRef}
@@ -124,30 +108,26 @@ export default function MainPlayer() {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="flex items-center gap-8">
         <button
           onClick={toggleShuffle}
           className={`text-xl transition-colors ${isShuffled ? 'text-purple-400' : 'text-gray-600 hover:text-gray-300'}`}
-          title="Shuffle"
-        >⇄</button>
+        >
+          {isShuffled ? '🔀' : '⇄'}
+        </button>
 
         <button
           onClick={() => {
-            if (currentTime > 3) {
-              audioEngine.seek(0)
-            } else {
-              prevTrack()
-            }
+            if (currentTime > 3) audioEngine.seek(0)
+            else prevTrack()
           }}
           className="text-gray-300 hover:text-white text-2xl transition-colors"
-        >⏮</button>
+        >
+          ⏮
+        </button>
 
-                <button
-          onClick={() => {
-            // AudioEngine ko bolo gaana load aur play kare
-            audioEngine.playAtIndex(currentIndex) 
-          }}
+        <button
+          onClick={() => audioEngine.playAtIndex(currentIndex)}
           className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 active:scale-95 transition-transform"
         >
           {isBuffering ? (
@@ -158,17 +138,17 @@ export default function MainPlayer() {
         <button
           onClick={nextTrack}
           className="text-gray-300 hover:text-white text-2xl transition-colors"
-        >⏭</button>
+        >
+          ⏭
+        </button>
 
         <button
           onClick={toggleLoop}
           className={`text-xl transition-colors ${loopMode !== 'none' ? 'text-purple-400' : 'text-gray-600 hover:text-gray-300'}`}
-          title={`Loop: ${loopMode}`}
         >
           {loopMode === 'one' ? '🔂' : '🔁'}
         </button>
       </div>
-
     </div>
   )
 }

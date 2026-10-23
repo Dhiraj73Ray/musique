@@ -5,9 +5,9 @@ import { getCachedTracks, cacheTracks, fetchAllTracks, clearCache } from '../../
 
 export default function TrackList() {
   const {
-    queue, originalQueue, currentIndex, isPlaying,
-    searchQuery, displayCount, loadMore,
-    totalTracks, isLoadingTracks, isSyncing,
+    queue, originalQueue, currentIndex, isPlaying, 
+    searchQuery, displayCount, loadMore, totalTracks, 
+    isLoadingTracks, isSyncing, isBackendDown,
     setTracks, setIsLoadingTracks, setIsSyncing, setLastSynced
   } = useMusicStore()
 
@@ -16,15 +16,13 @@ export default function TrackList() {
   }, [])
 
   const loadTracks = async () => {
-    // Step 1: Cache check — instant load
     const cached = getCachedTracks()
     if (cached && cached.length > 0) {
       setTracks(cached)
-      // Background mein quietly sync karo
       syncInBackground()
       return
     }
-    // Step 2: No cache — Drive se fetch karo
+    
     setIsLoadingTracks(true)
     try {
       const tracks = await fetchAllTracks()
@@ -57,6 +55,7 @@ export default function TrackList() {
       setTracks(tracks)
       cacheTracks(tracks)
       setLastSynced(new Date())
+      useMusicStore.getState().setBackendDown(false)
     } catch (e) {
       console.error(e)
     } finally {
@@ -64,12 +63,19 @@ export default function TrackList() {
     }
   }
 
-   // Left side list ke liye (A-Z)
+  // Left Side: Sirf originalQueue (A-Z) dikhega
   const filtered = searchQuery
     ? originalQueue.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 50)
     : originalQueue.slice(0, displayCount)
 
-  const formatName = (name) => name.replace(/\.(mp3|wav|flac|m4a)$/i, '')
+  const formatName = (name) => {
+    return name
+      .replace(/\.(mp3|wav|flac|m4a)$/i, '')
+      .replace(/@\s*Mp3.*$/i, '')
+      .replace(/\[.*?\]/g, '')
+      .replace(/_/g, ' ')
+      .trim()
+  }
 
   if (isLoadingTracks) {
     return (
@@ -80,14 +86,32 @@ export default function TrackList() {
     )
   }
 
+  // Error UI (Agar backend down hai aur koi cache data nahi hai)
+  if (isBackendDown && originalQueue.length === 0) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center gap-4 text-gray-500 p-6 text-center">
+        <span className="text-5xl opacity-50">⚠️</span>
+        <div>
+          <h2 className="text-white font-semibold text-lg">Server Offline</h2>
+          <p className="text-sm mt-1">Failed to connect to backend API.</p>
+        </div>
+        <button
+          onClick={loadTracks}
+          className="mt-2 px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-full transition-colors font-medium"
+        >
+          Retry Connection
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
       <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-white font-semibold">My Library</h2>
           <p className="text-gray-400 text-xs mt-0.5">
-            {displayCount} songs
+            {displayCount} / {totalTracks} songs 
           </p>
         </div>
         <button
@@ -100,7 +124,6 @@ export default function TrackList() {
         </button>
       </div>
 
-      {/* List */}
       <div className="overflow-y-auto flex-1">
         {filtered.map((track) => {
           const isActive = queue[currentIndex]?.id === track.id
@@ -137,13 +160,11 @@ export default function TrackList() {
           )
         })}
 
-        {/* Load More */}
         {!searchQuery && displayCount < totalTracks && (
           <button
             onClick={loadMore}
             className="w-full py-3 text-sm text-purple-400 hover:text-purple-300 hover:bg-white/5 transition border-t border-white/10"
           >
-            {/* Load More ({totalTracks - displayCount} remaining) */}
             Load More..
           </button>
         )}

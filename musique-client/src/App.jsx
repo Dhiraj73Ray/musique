@@ -3,6 +3,7 @@ import TrackList from './components/Library/TrackList'
 import MainPlayer from './components/Player/MainPlayer'
 import QueuePanel from './components/Queue/QueuePanel'
 import { useEffect } from 'react'
+import useMusicStore from './store/musicStore'
 
 function App() {
   const { nextTrack, prevTrack, isPlaying } = useMusicStore()
@@ -26,7 +27,7 @@ function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [nextTrack, prevTrack, isPlaying])
-  
+
   return (
     <div className="h-screen bg-[#12121f] flex flex-col overflow-hidden text-white">
       <Navbar />
