@@ -3,11 +3,11 @@ import useMusicStore from '../store/musicStore'
 const CACHE_KEY = 'musique_tracks'
 const CACHE_TIME_KEY = 'musique_tracks_time'
 const CACHE_EXPIRY = 1000 * 60 * 60 * 24 // 24 hours
+
+// Yahan Render ka URL aayega (Vercel ki env se)
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 let activeFetchPromise = null;
-
-const res = await fetch(`${API_BASE}/tracks/?skip=${skip}&limit=${limit}`)
 
 export const getCachedTracks = () => {
   try {
@@ -38,13 +38,14 @@ export const fetchAllTracks = async () => {
 
   activeFetchPromise = (async () => {
     const limit = 1000
-    let skip = 0
+    let skip = 0 // <--- YEH LINE MISSING THI
     let total = Infinity
     const all = []
 
     while (all.length < total) {
       try {
-        const res = await fetch(`/api/tracks/?skip=${skip}&limit=${limit}`)
+        // API_BASE use kiya yahan
+        const res = await fetch(`${API_BASE}/tracks/?skip=${skip}&limit=${limit}`)
         
         if (!res.ok) {
           throw new Error(`Server error: ${res.status}`)
@@ -58,10 +59,10 @@ export const fetchAllTracks = async () => {
         skip += data.tracks.length
         if (!data.tracks.length) break
         
-        useMusicStore.getState().setBackendDown(false) // Success
+        useMusicStore.getState().setBackendDown(false)
         
       } catch (err) {
-        useMusicStore.getState().setBackendDown(true) // Fail
+        useMusicStore.getState().setBackendDown(true)
         throw err
       }
     }
