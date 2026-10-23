@@ -15,7 +15,7 @@ export default function QueuePanel() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 py-3 border-b border-white/10 shrink-0">
         <h3 className="text-white font-semibold text-sm">Up Next</h3>
-        <p className="text-gray-500 text-xs mt-0.5">{queue.length - currentIndex - 1} songs remaining</p>
+        {/* <p className="text-gray-500 text-xs mt-0.5">{queue.length - currentIndex - 1} songs remaining</p> */}
       </div>
 
       <div className="overflow-y-auto flex-1">

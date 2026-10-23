@@ -86,7 +86,7 @@ export default function TrackList() {
         <div>
           <h2 className="text-white font-semibold">My Library</h2>
           <p className="text-gray-400 text-xs mt-0.5">
-            {totalTracks} songs
+            {displayCount} songs
           </p>
         </div>
         <button
@@ -143,7 +143,8 @@ export default function TrackList() {
             onClick={loadMore}
             className="w-full py-3 text-sm text-purple-400 hover:text-purple-300 hover:bg-white/5 transition border-t border-white/10"
           >
-            Load More ({totalTracks - displayCount} remaining)
+            {/* Load More ({totalTracks - displayCount} remaining) */}
+            Load More..
           </button>
         )}
         <div className="h-4" />
